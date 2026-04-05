@@ -356,7 +356,7 @@ def fouten_app():
     st.header("Foutenanalyse (Euler methode)")
 
     st.markdown("""
-    De Euler methode is een benadering van de exacte oplossing van de eerder gedefinieerde DV. Bekijk voor verschillende stapgroottes hoe de 
+    De Euler methode is een numerieke benadering voor de exacte oplossing van een DV (indien deze bestaat). In dit geval wordt de eerder gedefinieerde DV benaderd. Bekijk voor verschillende stapgroottes hoe de 
     fout zich ontwikkeld over het interval $[x_0,x_n]$.
     """)
 
