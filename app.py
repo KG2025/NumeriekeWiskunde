@@ -359,28 +359,38 @@ def eigenvector_app():
                 rf"v_{{{i+1}}} = \begin{{pmatrix}} {vec[0]:.3f} \\ {vec[1]:.3f} \end{{pmatrix}}"
             )
 
-    def plot_grid(ax, A, grid_range=5, n_lines=10):
-        xs = np.linspace(-grid_range, grid_range, n_lines)
-        for val in xs:
-            y = np.linspace(-grid_range, grid_range, 100)
-            x_vals = np.full_like(y, val)
-            points = np.vstack((x_vals, y))
-            transformed = A @ points
-            ax.plot(x_vals, y, color="lightgray", linewidth=1)
-            ax.plot(transformed[0], transformed[1], color="blue", alpha=0.4)
+    @st.cache_data
+    def compute_grid_lines(a11, a12, a21, a22, grid_range=4, n_lines=7, n_points=35):
+        A = np.array([[a11, a12], [a21, a22]])
+        vals = np.linspace(-grid_range, grid_range, n_lines)
+        t = np.linspace(-grid_range, grid_range, n_points)
 
-            x = np.linspace(-grid_range, grid_range, 100)
-            y_vals = np.full_like(x, val)
-            points = np.vstack((x, y_vals))
+        lines = []
+        for val in vals:
+            # verticale lijn
+            x_vals = np.full_like(t, val)
+            y_vals = t
+            points = np.vstack((x_vals, y_vals))
             transformed = A @ points
-            ax.plot(x, y_vals, color="lightgray", linewidth=1)
-            ax.plot(transformed[0], transformed[1], color="blue", alpha=0.4)
+            lines.append((x_vals, y_vals, transformed[0], transformed[1]))
 
-    show_grid = st.checkbox("Toon transformatie van het vlak", True, key="show_grid_eigen")
+            # horizontale lijn
+            x_vals = t
+            y_vals = np.full_like(t, val)
+            points = np.vstack((x_vals, y_vals))
+            transformed = A @ points
+            lines.append((x_vals, y_vals, transformed[0], transformed[1]))
+
+        return lines
+
+    show_grid = st.toggle("Toon transformatie van het vlak", value=True, key="show_grid_eigen")
     fig, ax = plt.subplots()
 
     if show_grid:
-        plot_grid(ax, A)
+        lines = compute_grid_lines(a11, a12, a21, a22)
+        for x, y, tx, ty in lines:
+            ax.plot(x, y, color="lightgray", linewidth=1)
+            ax.plot(tx, ty, color="blue", alpha=0.35, linewidth=1)
 
     colors = ["tab:blue", "tab:orange"]
     for i in range(2):
