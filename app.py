@@ -280,18 +280,41 @@ def eigenvector_app():
     die afhangt van de berekende eigenvectoren en eigenwaarden voor matrix $A$.
     """)
 
+    # Oorspronkelijke waarden
+    defaults = {
+        "a11": 2.0,
+        "a12": 1.0,
+        "a21": 1.0,
+        "a22": 2.0,
+        "v1": 1.0,
+        "v2": 1.0,
+    }
+
+    # Initialiseer session_state
+    for key, value in defaults.items():
+        if key not in st.session_state:
+            st.session_state[key] = value
+
     st.markdown("### Invoer")
+
+    col_reset1, col_reset2 = st.columns([1, 4])
+    with col_reset1:
+        if st.button("Reset", key="reset_eigenvector_tab"):
+            for key, value in defaults.items():
+                st.session_state[key] = value
+            st.rerun()
+
     col_left, col_right = st.columns(2)
 
     with col_left:
         st.markdown("**Matrix A**")
         mcol1, mcol2 = st.columns(2, gap="small")
         with mcol1:
-            a11 = st.number_input("", value=2.0, key="a11", label_visibility="collapsed")
-            a21 = st.number_input("", value=1.0, key="a21", label_visibility="collapsed")
+            a11 = st.number_input("", key="a11", label_visibility="collapsed")
+            a21 = st.number_input("", key="a21", label_visibility="collapsed")
         with mcol2:
-            a12 = st.number_input("", value=1.0, key="a12", label_visibility="collapsed")
-            a22 = st.number_input("", value=2.0, key="a22", label_visibility="collapsed")
+            a12 = st.number_input("", key="a12", label_visibility="collapsed")
+            a22 = st.number_input("", key="a22", label_visibility="collapsed")
 
         A = np.array([[a11, a12], [a21, a22]])
         st.latex(rf"A = \begin{{pmatrix}} {a11} & {a12} \\ {a21} & {a22} \end{{pmatrix}}")
@@ -301,74 +324,90 @@ def eigenvector_app():
         vcol1, vcol2 = st.columns(2, gap="small")
         with vcol1:
             st.markdown("vₓ")
-            v1 = st.number_input("", value=1.0, key="v1", label_visibility="collapsed")
+            v1 = st.number_input("", key="v1", label_visibility="collapsed")
         with vcol2:
             st.markdown("vᵧ")
-            v2 = st.number_input("", value=1.0, key="v2", label_visibility="collapsed")
+            v2 = st.number_input("", key="v2", label_visibility="collapsed")
 
         v_free = np.array([v1, v2])
         st.latex(rf"v = \begin{{pmatrix}} {v1} \\ {v2} \end{{pmatrix}}")
 
-    eigenvalues, eigenvectors = np.linalg.eig(A)
+    try:
+        eigenvalues, eigenvectors = np.linalg.eig(A)
+    except np.linalg.LinAlgError:
+        st.error("De eigenwaarden van deze matrix konden niet worden berekend.")
+        return
 
-    # Complexe eigenwaarden afvangen
     if np.iscomplex(eigenvalues).any():
         st.warning(
             "Deze matrix heeft complexe eigenwaarden. "
             "De visualisatie werkt alleen voor reële eigenwaarden — pas de matrix aan."
         )
-        st.stop()
+        return
 
-    eigenvalues  = eigenvalues.real
+    eigenvalues = eigenvalues.real
     eigenvectors = eigenvectors.real
 
     st.subheader("Eigenparen")
     cols = st.columns(len(eigenvalues))
     for i, col in enumerate(cols):
         lam = eigenvalues[i]
-        v   = eigenvectors[:, i]
+        vec = eigenvectors[:, i]
         with col:
             st.latex(rf"\lambda_{{{i+1}}} = {lam:.3f}")
-            st.latex(rf"v_{{{i+1}}} = \begin{{pmatrix}} {v[0]:.3f} \\ {v[1]:.3f} \end{{pmatrix}}")
+            st.latex(
+                rf"v_{{{i+1}}} = \begin{{pmatrix}} {vec[0]:.3f} \\ {vec[1]:.3f} \end{{pmatrix}}"
+            )
 
     def plot_grid(ax, A, grid_range=5, n_lines=10):
         xs = np.linspace(-grid_range, grid_range, n_lines)
         for val in xs:
-            # verticale lijn
-            y      = np.linspace(-grid_range, grid_range, 100)
+            y = np.linspace(-grid_range, grid_range, 100)
             x_vals = np.full_like(y, val)
             points = np.vstack((x_vals, y))
             transformed = A @ points
             ax.plot(x_vals, y, color="lightgray", linewidth=1)
             ax.plot(transformed[0], transformed[1], color="blue", alpha=0.4)
-            # horizontale lijn
-            x      = np.linspace(-grid_range, grid_range, 100)
+
+            x = np.linspace(-grid_range, grid_range, 100)
             y_vals = np.full_like(x, val)
             points = np.vstack((x, y_vals))
             transformed = A @ points
             ax.plot(x, y_vals, color="lightgray", linewidth=1)
             ax.plot(transformed[0], transformed[1], color="blue", alpha=0.4)
 
-    show_grid = st.checkbox("Toon transformatie van het vlak", True)
-    fig, ax   = plt.subplots()
+    show_grid = st.checkbox("Toon transformatie van het vlak", True, key="show_grid_eigen")
+    fig, ax = plt.subplots()
 
     if show_grid:
         plot_grid(ax, A)
 
     colors = ["tab:blue", "tab:orange"]
     for i in range(2):
-        v  = eigenvectors[:, i]
-        Av = A @ v
-        ax.quiver(0, 0, v[0],  v[1],  angles='xy', scale_units='xy', scale=1,
-                  color=colors[i], width=0.01,  label=f"v{i+1}")
-        ax.quiver(0, 0, Av[0], Av[1], angles='xy', scale_units='xy', scale=1,
-                  color=colors[i], alpha=0.4, width=0.008)
+        vec = eigenvectors[:, i]
+        Avec = A @ vec
+        ax.quiver(
+            0, 0, vec[0], vec[1],
+            angles='xy', scale_units='xy', scale=1,
+            color=colors[i], width=0.01, label=f"v{i+1}"
+        )
+        ax.quiver(
+            0, 0, Avec[0], Avec[1],
+            angles='xy', scale_units='xy', scale=1,
+            color=colors[i], alpha=0.4, width=0.008
+        )
 
     Av_free = A @ v_free
-    ax.quiver(0, 0, v_free[0],  v_free[1],  angles='xy', scale_units='xy', scale=1,
-              color="black", width=0.012, label="v")
-    ax.quiver(0, 0, Av_free[0], Av_free[1], angles='xy', scale_units='xy', scale=1,
-              color="gray",  alpha=0.6,  width=0.008, label="Av")
+    ax.quiver(
+        0, 0, v_free[0], v_free[1],
+        angles='xy', scale_units='xy', scale=1,
+        color="black", width=0.012, label="v"
+    )
+    ax.quiver(
+        0, 0, Av_free[0], Av_free[1],
+        angles='xy', scale_units='xy', scale=1,
+        color="gray", alpha=0.6, width=0.008, label="Av"
+    )
 
     ax.set_aspect('equal')
 
@@ -376,7 +415,9 @@ def eigenvector_app():
     for i in range(2):
         all_vecs.extend([eigenvectors[:, i], A @ eigenvectors[:, i]])
     all_vecs.extend([v_free, Av_free])
-    max_val = np.max(np.abs(all_vecs)) + 0.5
+
+    max_val = np.max(np.abs(np.array(all_vecs))) + 0.5
+    max_val = max(max_val, 1.5)
 
     ax.set_xlim(-max_val, max_val)
     ax.set_ylim(-max_val, max_val)
@@ -393,7 +434,6 @@ def eigenvector_app():
     st.info("Eigenvectoren behouden hun richting onder de transformatie A. Andere vectoren veranderen van richting.")
     st.info("De lichtgrijze lijnen tonen het originele rooster; de blauwe lijnen tonen de transformatie door A.")
     st.info("De eigenwaarden bepalen hoeveel het vlak in de richting van elke eigenvector wordt uitgerekt of ingekrompen.")
-
 
 # ─────────────────────────────────────────────
 # Main
