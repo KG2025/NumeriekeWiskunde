@@ -451,7 +451,7 @@ def eigenvector_app():
 def main():
     st.info("Deze app is bedoeld als ondersteuning bij het uitleggen van numerieke methoden en lineaire algebra.")
 
-    tab1, tab2, tab3, tab4 = st.tabs(["Taylor", "Euler", "Fouten", "Eigenvectoren"])
+    tab1, tab2, tab3, tab4 = st.tabs(["Euler", "Taylor", "Fouten", "Eigenvectoren"])
 
     with tab1:
         euler_app()
