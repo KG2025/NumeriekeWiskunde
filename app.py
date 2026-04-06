@@ -454,9 +454,9 @@ def main():
     tab1, tab2, tab3, tab4 = st.tabs(["Taylor", "Euler", "Fouten", "Eigenvectoren"])
 
     with tab1:
-        taylor_app()
-    with tab2:
         euler_app()
+    with tab2:
+        taylor_app()
     with tab3:
         fouten_app()
     with tab4:
